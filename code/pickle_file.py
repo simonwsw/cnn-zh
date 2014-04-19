@@ -28,7 +28,8 @@ class PickleFile(object):
             n_train_batches = len(pickle_array[0]) / batch_size
             n_train = n_train_batches * batch_size
 
-        train_set_x, train_set_y = self.shared_dataset(pickle_array[:][:n_train])
+        train_set_x, train_set_y = self.shared_dataset(
+            [pickle_array[0][:n_train], pickle_array[1][:n_train]])
         print "File train.pkl.gz is loaded"
 
         # valid set
@@ -43,7 +44,8 @@ class PickleFile(object):
         else:
             n_valid_batches = len(pickle_array[0]) / batch_size
             n_valid = n_valid_batches * batch_size
-        valid_set_x, valid_set_y = self.shared_dataset(pickle_array[:][:n_valid])
+        valid_set_x, valid_set_y = self.shared_dataset(
+            [pickle_array[0][:n_valid], pickle_array[1][:n_valid]])
         print "File valid.pkl.gz is loaded"
 
         # test set
@@ -58,8 +60,9 @@ class PickleFile(object):
         else:
             n_test_batches = len(pickle_array[0]) / batch_size
             n_test = n_test_batches * batch_size
+        test_set_x, test_set_y = self.shared_dataset(
+            [pickle_array[0][:n_test], pickle_array[1][:n_test]])
         print "File test.pkl.gz is loaded"
-        test_set_x, test_set_y = self.shared_dataset(pickle_array[:][:n_test])
 
         rval = [(train_set_x, train_set_y), (valid_set_x, valid_set_y),
                 (test_set_x, test_set_y)]

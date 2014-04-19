@@ -26,10 +26,9 @@ class SingleGntImage(object):
             if label_utf8 in utf8int_dict:
                 return False, utf8int_dict[label_utf8]
             else:
-                utf8int_max += 1
                 utf8int_dict[label_utf8] = utf8int_max
-                # print label_utf8, ":", utf8int_dict[label_utf8]
-                return False, utf8int_max
+                utf8int_max += 1
+                return False, utf8int_max - 1
 
     def read_special_hex(self, length):
         num_hex_str = ""
