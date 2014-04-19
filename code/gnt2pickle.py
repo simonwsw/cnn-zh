@@ -50,7 +50,6 @@ class SingleGntImage(object):
         try:
             self.next_length = self.read_special_hex(4)
         except ValueError:
-            print "Notice: end of file"
             return None, None, None, None, True
 
         # read the chinese utf-8 label
@@ -71,10 +70,9 @@ class SingleGntImage(object):
             image_matrix_list.append(row)
 
         # convert to numpy ndarray with size of 40 * 40 and add margin of 4
-        self.image_matrix_numpy = \
-            scipy.misc.imresize(numpy.array(image_matrix_list), \
-            size=(40, 40)) / max_value
-        self.image_matrix_numpy = numpy.lib.pad(self.image_matrix_numpy, \
+        self.image_matrix_numpy = scipy.misc.imresize(
+            numpy.array(image_matrix_list), size=(40, 40)) / max_value
+        self.image_matrix_numpy = numpy.lib.pad(self.image_matrix_numpy, 
             margin, self.padwithones)
         return self.label, self.image_matrix_numpy, \
             self.width, self.height, False
@@ -90,15 +88,15 @@ class GntFiles(object):
 
     def find_file(self):
         file_extend = ".gnt"
-        self.file_list = []
+        file_list = []
 
         # get all gnt files in the dir
         dir_path = os.path.join(os.path.split(__file__)[0], "..", 
             self.file_dir)
         for file_name in glob.glob(os.path.join(dir_path, '*.gnt')):
-            self.file_list.append(file_name)
+            file_list.append(file_name)
 
-        return self.file_list
+        return file_list
 
     def utf8int(self, label_utf8):
         # utf-8 to int
@@ -110,23 +108,22 @@ class GntFiles(object):
             print label_utf8, ":", self.utf8int_dict[label_utf8]
         return self.utf8int_max
 
-    def read_file(self, file_number_limit=None):
+    def load_file(self, write_dir, write_prefix, batch_size):
         global utf8int_max
-        self.find_file()
+        file_list = self.find_file()
 
         count_file = 0
-        self.pickel_array = [[], []]
+        pickel_array = [[], []]
         print (("Reading %i files from %s directory...") % 
-            (len(self.file_list), self.file_dir))
+            (len(file_list), self.file_dir))
         
         #open all gnt files
-        for file_name in self.file_list:
+        for file_name in file_list:
             count_file = count_file + 1
             with open(file_name, 'rb') as f:
                 end_of_image = False
                 count_single = 0
                 while not end_of_image:
-                    count_single = count_single + 1
                     this_single_image = SingleGntImage(f)
 
                     # get the pixel matrix of a single image
@@ -135,31 +132,31 @@ class GntFiles(object):
 
                     # load matrix ato 1d feature to array
                     if not end_of_image:
-                        self.pickel_array[0].append(pixel_matrix.reshape(-1))
-                        self.pickel_array[1].append(label)
+                        pickel_array[0].append(pixel_matrix.reshape(-1))
+                        pickel_array[1].append(label)
+                        count_single = count_single + 1
+                    else:
+                        break
 
             print ("Finish file #%i with %i samples. Char count %i") % \
-                (count_file, count_single - 1, utf8int_max)
-
-            if not file_number_limit is None and (count_file >= 
-                file_number_limit):
-                print "File number reach limit of", file_number_limit
-                break
+                (count_file, count_single, utf8int_max)
 
         print count_file, "files are read"
+        self.write_file(pickel_array, write_dir, write_prefix, batch_size)
 
-    def write_file(self, file_dir, file_name):
+    # batch_size is not yet used
+    def write_file(self, pickel_array, write_dir, write_prefix, batch_size):
         global utf8int_max
-        save_name = os.path.join(os.path.split(__file__)[0], "..", file_dir, \
-            file_name)
+        write_name = write_prefix + ".pkl.gz"
+        save_name = os.path.join(os.path.split(__file__)[0], "..", write_dir, 
+            write_name)
 
         # dump to pickle
         with gzip.open(save_name, 'wb') as f:
-            cPickle.dump(self.pickel_array, f, 
-                protocol=cPickle.HIGHEST_PROTOCOL)
+            cPickle.dump(pickel_array, f, protocol=cPickle.HIGHEST_PROTOCOL)
 
         print (("File %s with %i classes is dumped") % 
-            (file_name, utf8int_max))
+            (write_name, utf8int_max))
 
     def save_image(self, matrix, label, count):
         im = Image.fromarray(matrix)
@@ -169,23 +166,20 @@ class GntFiles(object):
 def gnt2pickle():
     # train set data
     train_gnt_files = GntFiles("data/train_set")
-    train_gnt_files.read_file()
-    train_gnt_files.write_file("data", "train.pkl.gz")
+    train_gnt_files.load_file("data", "train", 500)
 
     # valid set data
     valid_gnt_files = GntFiles("data/valid_set")
-    valid_gnt_files.read_file()
-    valid_gnt_files.write_file("data", "valid.pkl.gz")
+    valid_gnt_files.load_file("data", "valid", 500)
 
     # test set data
     test_gnt_files = GntFiles("data/test_set")
-    test_gnt_files.read_file()
-    test_gnt_files.write_file("data", "test.pkl.gz")
+    test_gnt_files.load_file("data", "test", 500)
 
 def test():
     # train set data
-    train_gnt_files = GntFiles("data")
-    train_gnt_files.read_file()
+    train_gnt_files = GntFiles("data/train_set")
+    train_gnt_files.load_file("data", "train", 500)
 
 if __name__ == '__main__':
     gnt2pickle()
