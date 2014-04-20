@@ -18,9 +18,9 @@ def lenet():
     valid_prefix = "valid"
     test_dir = "data/test_pickle"
     test_prefix = "test"
-    n_train_batches = 300
-    n_valid_batches = 100
-    n_test_batches = 100
+    n_train_batches = 67
+    n_valid_batches = 22
+    n_test_batches = 22
     batch_size = 500
     learning_rate=0.1
     image_size = 48

@@ -134,9 +134,13 @@ class GntFiles(object):
 
                     # load matrix ato 1d feature to array
                     if not end_of_image:
+                        # save data to pickle array
+                        pickle_array[0].append(pixel_matrix.reshape(-1))
+                        pickle_array[1].append(label)
+                        count_single = count_single + 1
                         
                         # check in batch count
-                        if in_batch_count >= batch_size:
+                        if in_batch_count >= batch_size - 1:
                             
                             # write file first
                             self.write_file(pickle_array, 
@@ -147,10 +151,6 @@ class GntFiles(object):
                         else:
                             in_batch_count += 1
 
-                        # save data to pickle array
-                        pickle_array[0].append(pixel_matrix.reshape(-1))
-                        pickle_array[1].append(label)
-                        count_single = count_single + 1
                     else:
                         break
 
@@ -197,5 +197,5 @@ def test():
     train_gnt_files.load_file("data/train_pickle", "train", 500)
 
 if __name__ == '__main__':
-    # gnt2pickle()
-    test()
+    gnt2pickle()
+    # test()
