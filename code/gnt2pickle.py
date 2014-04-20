@@ -113,7 +113,9 @@ class GntFiles(object):
         file_list = self.find_file()
 
         count_file = 0
-        pickel_array = [[], []]
+        pickle_array = [[], []]
+        batch_count = 0
+        in_batch_count = 0
         print (("Reading %i files from %s directory...") % 
             (len(file_list), self.file_dir))
         
@@ -132,8 +134,22 @@ class GntFiles(object):
 
                     # load matrix ato 1d feature to array
                     if not end_of_image:
-                        pickel_array[0].append(pixel_matrix.reshape(-1))
-                        pickel_array[1].append(label)
+                        
+                        # check in batch count
+                        if in_batch_count >= batch_size:
+                            
+                            # write file first
+                            self.write_file(pickle_array, 
+                                write_dir, write_prefix, batch_count)
+                            batch_count += 1
+                            in_batch_count = 0
+                            pickle_array = [[], []]
+                        else:
+                            in_batch_count += 1
+
+                        # save data to pickle array
+                        pickle_array[0].append(pixel_matrix.reshape(-1))
+                        pickle_array[1].append(label)
                         count_single = count_single + 1
                     else:
                         break
@@ -141,22 +157,19 @@ class GntFiles(object):
             print ("Finish file #%i with %i samples. Char count %i") % \
                 (count_file, count_single, utf8int_max)
 
-        print count_file, "files are read"
-        self.write_file(pickel_array, write_dir, write_prefix, batch_size)
+        print (("%i files are read and write to %i batches files") % 
+            (count_file, batch_count))
 
     # batch_size is not yet used
-    def write_file(self, pickel_array, write_dir, write_prefix, batch_size):
+    def write_file(self, pickle_array, write_dir, write_prefix, batch_count):
         global utf8int_max
-        write_name = write_prefix + ".pkl.gz"
+        write_name = (("%s(%i).pkl.gz") % (write_prefix, batch_count))
         save_name = os.path.join(os.path.split(__file__)[0], "..", write_dir, 
             write_name)
 
         # dump to pickle
         with gzip.open(save_name, 'wb') as f:
-            cPickle.dump(pickel_array, f, protocol=cPickle.HIGHEST_PROTOCOL)
-
-        print (("File %s with %i classes is dumped") % 
-            (write_name, utf8int_max))
+            cPickle.dump(pickle_array, f, protocol=cPickle.HIGHEST_PROTOCOL)
 
     def save_image(self, matrix, label, count):
         im = Image.fromarray(matrix)
@@ -166,21 +179,21 @@ class GntFiles(object):
 def gnt2pickle():
     # train set data
     train_gnt_files = GntFiles("data/train_set")
-    train_gnt_files.load_file("data", "train", 500)
+    train_gnt_files.load_file("data/train_pickle", "train", 500)
 
     # valid set data
     valid_gnt_files = GntFiles("data/valid_set")
-    valid_gnt_files.load_file("data", "valid", 500)
+    valid_gnt_files.load_file("data/valid_pickle", "valid", 500)
 
     # test set data
     test_gnt_files = GntFiles("data/test_set")
-    test_gnt_files.load_file("data", "test", 500)
+    test_gnt_files.load_file("data/test_pickle", "test", 500)
 
 def test():
     # train set data
     train_gnt_files = GntFiles("data/train_set")
-    train_gnt_files.load_file("data", "train", 500)
+    train_gnt_files.load_file("data/train_pickle", "train", 500)
 
 if __name__ == '__main__':
-    gnt2pickle()
-    # test()
+    # gnt2pickle()
+    test()
