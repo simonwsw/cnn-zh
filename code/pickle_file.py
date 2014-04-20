@@ -21,19 +21,31 @@ class PickleFile(object):
         with gzip.open(open_name, 'rb') as f:
             set_x, set_y = cPickle.load(f)
 
-        print len(set_x), set_x[0].shape
+        # print len(set_x), set_x[0].shape
 
-        # change to share data set
-        shared_x = theano.shared(numpy.asarray(set_x, 
-            dtype=theano.config.floatX), borrow=True)
-        shared_y = theano.shared(numpy.asarray(set_y, 
-            dtype=theano.config.floatX), borrow=True)
-
+        data_x = numpy.asarray(set_x, dtype=theano.config.floatX)
+        data_y = numpy.asarray(set_y, dtype='int32')
         print (("File %s is loaded") % (read_name))
-        return shared_x, T.cast(shared_y, 'int32')
+        return data_x, data_y
+
+    # get shared variables of zeros
+    @staticmethod
+    def shared_zeros(image_size, batch_size):
+        image_zeros = [numpy.zeros(image_size * image_size)] * batch_size
+        label_zeros = [0] * batch_size
+        
+        # print len(image_zeros), image_zeros[0].shape
+        
+        # change to share data set
+        shared_x = theano.shared(numpy.asarray(image_zeros, 
+            dtype=theano.config.floatX), borrow=True)
+        shared_y = theano.shared(numpy.asarray(label_zeros, 
+            dtype='int32'), borrow=True)
+        return shared_x, shared_y
 
 def test():
-    PickleFile.read_file("data/train_pickle", "train", 0)
+    # PickleFile.read_file("data/train_pickle", "train", 0)
+    PickleFile.shared_zeros(48, 500)
 
 if __name__ == '__main__':
     test()

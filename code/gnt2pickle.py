@@ -171,6 +171,8 @@ class GntFiles(object):
         with gzip.open(save_name, 'wb') as f:
             cPickle.dump(pickle_array, f, protocol=cPickle.HIGHEST_PROTOCOL)
 
+        print (("File %s is written") % (write_name))
+
     def save_image(self, matrix, label, count):
         im = Image.fromarray(matrix)
         name = ("tmp/test-%i (%i).tiff") % (label, count)

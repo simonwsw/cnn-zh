@@ -12,22 +12,26 @@ def lenet():
     
     # set up parameters
     class_count = 3755
-    file_dir = "data"
+    train_dir = "data/train_pickle"
+    train_prefix = "train"
+    valid_dir = "data/valid_pickle"
+    valid_prefix = "valid"
+    test_dir = "data/test_pickle"
+    test_prefix = "test"
+    n_train_batches = 300
+    n_valid_batches = 100
+    n_test_batches = 100
     batch_size = 500
     learning_rate=0.1
+    image_size = 48
 
     # set up random number
     rng = numpy.random.RandomState(23455)
-    
-    # get the batch file from pickle file
-    pickle_file = PickleFile()
-    datasets, n_batches = pickle_file.read_file(file_dir, 
-        batch_size=batch_size)
 
-    train_set_x, train_set_y = datasets[0]
-    valid_set_x, valid_set_y = datasets[1]
-    test_set_x, test_set_y = datasets[2]
-    n_train_batches, n_valid_batches, n_test_batches = n_batches
+    # initialize shared variables
+    train_set_x, train_set_y = PickleFile.shared_zeros(image_size, batch_size)
+    valid_set_x, valid_set_y = PickleFile.shared_zeros(image_size, batch_size)
+    test_set_x, test_set_y = PickleFile.shared_zeros(image_size, batch_size)
 
     # ========== build the model ==========
     # start to build the model. prepare the parameters
@@ -109,21 +113,15 @@ def lenet():
         updates.append((param_i, param_i - learning_rate * grad_i))
     
     # create a function to compute the mistakes that are made by the model
-    test_model = theano.function([index], layer3.errors(y), 
-        givens={
-            x: test_set_x[index * batch_size: (index + 1) * batch_size],
-            y: test_set_y[index * batch_size: (index + 1) * batch_size]})
+    test_model = theano.function([], layer3.errors(y), 
+        givens={x: test_set_x, y: test_set_y})
 
-    validate_model = theano.function([index], layer3.errors(y),
-        givens={
-            x: valid_set_x[index * batch_size: (index + 1) * batch_size],
-            y: valid_set_y[index * batch_size: (index + 1) * batch_size]})
+    validate_model = theano.function([], layer3.errors(y),
+        givens={x: valid_set_x, y: valid_set_y})
 
     # train_model is a function that updates the model parameters by sgd
-    train_model = theano.function([index], cost, updates=updates,
-        givens={
-            x: train_set_x[index * batch_size: (index + 1) * batch_size],
-            y: train_set_y[index * batch_size: (index + 1) * batch_size]})
+    train_model = theano.function([], cost, updates=updates,
+        givens={x: train_set_x, y: train_set_y})
 
 
     # ========== train model ==========
@@ -154,12 +152,26 @@ def lenet():
 
             # print training iteration and do training
             print "training @ iter = ", iter
-            cost_ij = train_model(minibatch_index)
+            
+            # load new train data
+            new_train_set_x, new_train_set_y = PickleFile.read_file(
+                train_dir, train_prefix, minibatch_index)
+            train_set_x.set_value(new_train_set_x, borrow=True)
+            train_set_y.set_value(new_train_set_y, borrow=True)
+            cost_ij = train_model()
 
             # compute zero-one loss on validation set
             if (iter + 1) % validation_frequency == 0:
-                validation_losses = [validate_model(i) for i 
-                    in xrange(n_valid_batches)]
+                validation_losses = []
+                
+                for i in xrange(n_valid_batches):
+                    # load new valid data
+                    new_valid_set_x, new_valid_set_y = PickleFile.read_file(
+                        valid_dir, valid_prefix, i)
+                    valid_set_x.set_value(new_valid_set_x, borrow=True)
+                    valid_set_y.set_value(new_valid_set_y, borrow=True)
+                    validation_losses.append(validate_model())
+
                 this_validation_loss = numpy.mean(validation_losses)
                 print ("Epoch %i, batch %i/%i, validation error %f %%" % 
                     (epoch, minibatch_index + 1, n_train_batches, 
@@ -178,8 +190,16 @@ def lenet():
                     best_iter = iter
 
                     # test it on the test set
-                    test_losses = [test_model(i) for i 
-                        in xrange(n_test_batches)]
+                    test_losses = []
+
+                    for i in xrange(n_test_batches):
+                        # load new test data
+                        new_test_set_x, new_test_set_y = PickleFile.read_file(
+                            test_dir, test_prefix, i)
+                        test_set_x.set_value(new_test_set_x, borrow=True)
+                        test_set_y.set_value(new_test_set_y, borrow=True)
+                        test_losses.append(test_model())
+
                     test_score = numpy.mean(test_losses)
                     print (("    -> test error of best model %f %%") %
                         (test_score * 100.))
