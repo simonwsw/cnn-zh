@@ -1,4 +1,5 @@
-import time
+import time, datetime
+import os
 
 import numpy
 import theano
@@ -24,6 +25,12 @@ def lenet():
     batch_size = 500
     learning_rate = 0.1
     image_size = 48
+
+    # set up log file
+    log_dir = "tmp"
+    log_name = "log.txt"
+    log_file = os.path.join(os.path.split(__file__)[0], "..", log_dir, 
+        log_name)
 
     # set up random number
     rng = numpy.random.RandomState(23455)
@@ -165,8 +172,12 @@ def lenet():
             iter = (epoch - 1) * n_train_batches + minibatch_index
 
             # print training iteration and do training
-            print "training @ iter = ", iter
-            
+            print "[%s]" % str(datetime.datetime.now())
+            print "training @ iter = %i" % (iter)
+            with open(log_file, "a") as log_f:
+                log_f.write("[%s]\n" % str(datetime.datetime.now()))
+                log_f.write("train @ iter = %i\n" % (iter))
+
             # load new train data
             new_train_set_x, new_train_set_y = PickleFile.read_file(
                 train_dir, train_prefix, minibatch_index)
@@ -187,9 +198,16 @@ def lenet():
                     validation_losses.append(validate_model())
 
                 this_validation_loss = numpy.mean(validation_losses)
+                print "[%s]" % str(datetime.datetime.now())
                 print ("Epoch %i, batch %i/%i, validation error %f %%" % 
                     (epoch, minibatch_index + 1, n_train_batches, 
                     this_validation_loss * 100.))
+                with open(log_file, "a") as log_f:
+                    log_f.write("[%s]\n" % str(datetime.datetime.now()))
+                    log_f.write(("Epoch %i, batch %i/%i, " 
+                        "validation error %f %%\n") % 
+                        (epoch, minibatch_index + 1, n_train_batches, 
+                        this_validation_loss * 100.))
 
                 # if we got the best validation score until now
                 if this_validation_loss < best_validation_loss:
@@ -215,8 +233,13 @@ def lenet():
                         test_losses.append(test_model())
 
                     test_score = numpy.mean(test_losses)
+                    print "[%s]" % str(datetime.datetime.now())
                     print (("    -> test error of best model %f %%") %
                         (test_score * 100.))
+                    with open(log_file, "a") as log_f:
+                        log_f.write("[%s]\n" % str(datetime.datetime.now()))
+                        log_f.write(("    -> test error of best model " 
+                            "%f %%\n") % (test_score * 100.))
 
             # reach the patience and end loop
             if patience <= iter:
