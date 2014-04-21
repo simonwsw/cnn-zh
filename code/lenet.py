@@ -37,13 +37,21 @@ def lenet():
     # start to build the model. prepare the parameters
     print "Building the model..."
     layer0_param = LeNetConvPoolParam(input_image_size=48, 
-        input_feature_num=1, filter_size=5, pooling_size=2, kernel=10)
+        input_feature_num=1, filter_size=3, pooling_size=2, kernel=100)
     layer1_param = LeNetConvPoolParam(
         input_image_size=layer0_param.output_size, 
         input_feature_num=layer0_param.kernel, 
-        filter_size=5, pooling_size=2, kernel=20)
-    layer2_output_size = 100
-    layer3_output_size = class_count
+        filter_size=2, pooling_size=2, kernel=200)
+    layer2_param = LeNetConvPoolParam(
+        input_image_size=layer1_param.output_size, 
+        input_feature_num=layer1_param.kernel, 
+        filter_size=2, pooling_size=2, kernel=300)
+    layer3_param = LeNetConvPoolParam(
+        input_image_size=layer2_param.output_size, 
+        input_feature_num=layer2_param.kernel, 
+        filter_size=2, pooling_size=2, kernel=400)
+    layer4_output_size = 500
+    layer5_output_size = class_count
 
     # allocate symbolic variables for the data: 
     # mini batch index, rasterized images, labels
@@ -82,27 +90,46 @@ def lenet():
         poolsize=(layer1_param.pooling_size, 
             layer1_param.pooling_size))
 
+    layer2 = LeNetConvPoolLayer(rng, input=layer1.output,
+        image_shape=(batch_size, layer2_param.input_feature_num, 
+            layer2_param.input_image_size, layer2_param.input_image_size),
+        filter_shape=(layer2_param.kernel, 
+            layer2_param.input_feature_num, layer2_param.filter_size, 
+            layer2_param.filter_size), 
+        poolsize=(layer2_param.pooling_size, 
+            layer2_param.pooling_size))
+
+    layer3 = LeNetConvPoolLayer(rng, input=layer2.output,
+        image_shape=(batch_size, layer3_param.input_feature_num, 
+            layer3_param.input_image_size, layer3_param.input_image_size),
+        filter_shape=(layer3_param.kernel, 
+            layer3_param.input_feature_num, layer3_param.filter_size, 
+            layer3_param.filter_size), 
+        poolsize=(layer3_param.pooling_size, 
+            layer3_param.pooling_size))
+
     # the hiddenLayer being fully-connected, 
     # it operates on 2d matrices of shape: (batch_size, num_pixels)
     # this will generate a matrix of shape: 
     # (batch_size, kernel[1] * output ** 2)
-    layer2_input = layer1.output.flatten(2)
+    layer4_input = layer3.output.flatten(2)
 
     # construct a fully-connected sigmoidal layer
-    layer2 = HiddenLayer(rng, input=layer2_input, 
-        n_in=(layer1_param.kernel * layer1_param.output_size * 
-            layer1_param.output_size), n_out=layer2_output_size, 
+    layer4 = HiddenLayer(rng, input=layer4_input, 
+        n_in=(layer3_param.kernel * layer3_param.output_size * 
+            layer3_param.output_size), n_out=layer4_output_size, 
         activation=T.tanh)
 
     # classify the values of the fully-connected sigmoidal layer
-    layer3 = LogisticRegression(input=layer2.output, 
-        n_in=layer2_output_size, n_out=layer3_output_size)
+    layer5 = LogisticRegression(input=layer4.output, 
+        n_in=layer4_output_size, n_out=layer5_output_size)
 
     # the cost we minimize during training is the NLL of the model
-    cost = layer3.negative_log_likelihood(y)
+    cost = layer5.negative_log_likelihood(y)
 
     # create a list of all model parameters to be fit by gradient descent
-    params = layer3.params + layer2.params + layer1.params + layer0.params
+    params = (layer5.params, layer4.params, layer3.params + layer2.params + 
+        layer1.params + layer0.params)
 
     # create a list of gradients for all model parameters
     grads = T.grad(cost, params)
@@ -113,10 +140,10 @@ def lenet():
         updates.append((param_i, param_i - learning_rate * grad_i))
     
     # create a function to compute the mistakes that are made by the model
-    test_model = theano.function([], layer3.errors(y), 
+    test_model = theano.function([], layer5.errors(y), 
         givens={x: test_set_x, y: test_set_y})
 
-    validate_model = theano.function([], layer3.errors(y),
+    validate_model = theano.function([], layer5.errors(y),
         givens={x: valid_set_x, y: valid_set_y})
 
     # train_model is a function that updates the model parameters by sgd
