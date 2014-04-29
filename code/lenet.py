@@ -12,19 +12,19 @@ from conv_module import LeNetConvPoolLayer, LeNetConvPoolParam
 def lenet():
     
     # set up parameters
-    class_count = 3755
+    class_count = 10
     train_dir = "data/train_pickle"
     train_prefix = "train"
     valid_dir = "data/valid_pickle"
     valid_prefix = "valid"
     test_dir = "data/test_pickle"
     test_prefix = "test"
-    n_train_batches = 600
-    n_valid_batches = 200
-    n_test_batches = 200
+    n_train_batches = 100
+    n_valid_batches = 20
+    n_test_batches = 20
     batch_size = 500
     learning_rate = 0.1
-    image_size = 48
+    image_size = 28
 
     # set up log file
     log_dir = "tmp"
@@ -43,7 +43,7 @@ def lenet():
     # ========== build the model ==========
     # start to build the model. prepare the parameters
     print "Building the model..."
-    layer0_param = LeNetConvPoolParam(input_image_size=48, 
+    layer0_param = LeNetConvPoolParam(input_image_size=28, 
         input_feature_num=1, filter_size=3, pooling_size=2, kernel=100)
     layer1_param = LeNetConvPoolParam(
         input_image_size=layer0_param.output_size, 
@@ -52,7 +52,7 @@ def lenet():
     layer2_param = LeNetConvPoolParam(
         input_image_size=layer1_param.output_size, 
         input_feature_num=layer1_param.kernel, 
-        filter_size=2, pooling_size=2, kernel=300)
+        filter_size=3, pooling_size=2, kernel=300)
     layer3_output_size = 400
     layer4_output_size = class_count
 
