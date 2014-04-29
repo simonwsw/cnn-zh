@@ -108,7 +108,8 @@ class GntFiles(object):
             print label_utf8, ":", self.utf8int_dict[label_utf8]
         return self.utf8int_max
 
-    def load_file(self, write_dir, write_prefix, batch_size):
+    def load_file(self, write_dir, write_prefix, batch_size, 
+            range_from=0, range_to=numpy.inf):
         global utf8int_max
         file_list = self.find_file()
 
@@ -134,22 +135,26 @@ class GntFiles(object):
 
                     # load matrix ato 1d feature to array
                     if not end_of_image:
-                        # save data to pickle array
-                        pickle_array[0].append(pixel_matrix.reshape(-1))
-                        pickle_array[1].append(label)
-                        count_single = count_single + 1
                         
-                        # check in batch count
-                        if in_batch_count >= batch_size - 1:
+                        # check the range of image
+                        # notice the <= and < of the value
+                        if range_from <= label < range_to:
+                            # save data to pickle array
+                            pickle_array[0].append(pixel_matrix.reshape(-1))
+                            pickle_array[1].append(label)
+                            count_single = count_single + 1
                             
-                            # write file first
-                            self.write_file(pickle_array, 
-                                write_dir, write_prefix, batch_count)
-                            batch_count += 1
-                            in_batch_count = 0
-                            pickle_array = [[], []]
-                        else:
-                            in_batch_count += 1
+                            # check in batch count
+                            if in_batch_count >= batch_size - 1:
+                                
+                                # write file first
+                                self.write_file(pickle_array, 
+                                    write_dir, write_prefix, batch_count)
+                                batch_count += 1
+                                in_batch_count = 0
+                                pickle_array = [[], []]
+                            else:
+                                in_batch_count += 1
 
                     else:
                         break
@@ -181,15 +186,15 @@ class GntFiles(object):
 def gnt2pickle():
     # train set data
     train_gnt_files = GntFiles("data/train_set")
-    train_gnt_files.load_file("data/train_pickle", "train", 500)
+    train_gnt_files.load_file("data/train_pickle", "train", 500, 0, 30)
 
     # valid set data
     valid_gnt_files = GntFiles("data/valid_set")
-    valid_gnt_files.load_file("data/valid_pickle", "valid", 500)
+    valid_gnt_files.load_file("data/valid_pickle", "valid", 500, 0, 30)
 
     # test set data
     test_gnt_files = GntFiles("data/test_set")
-    test_gnt_files.load_file("data/test_pickle", "test", 500)
+    test_gnt_files.load_file("data/test_pickle", "test", 500, 0, 30)
 
 def test():
     # train set data
