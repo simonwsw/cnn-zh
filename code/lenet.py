@@ -13,11 +13,11 @@ def lenet():
     
     # set up parameters
     class_count = 10
-    train_dir = "data/train_pickle"
+    train_dir = "data/m_train_pickle"
     train_prefix = "train"
-    valid_dir = "data/valid_pickle"
+    valid_dir = "data/m_valid_pickle"
     valid_prefix = "valid"
-    test_dir = "data/test_pickle"
+    test_dir = "data/m_test_pickle"
     test_prefix = "test"
     n_train_batches = 100
     n_valid_batches = 20
