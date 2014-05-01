@@ -40,7 +40,7 @@ class SingleGntImage(object):
 
         return int(num_hex_str.encode('hex'), 16)
 
-    def read_single_image(self):
+    def read_single_image(self, range_from, range_to):
         
         # zero-one value
         max_value = 255.0
@@ -69,13 +69,16 @@ class SingleGntImage(object):
 
             image_matrix_list.append(row)
 
-        # convert to numpy ndarray with size of 40 * 40 and add margin of 4
-        self.image_matrix_numpy = scipy.misc.imresize(
-            numpy.array(image_matrix_list), size=(40, 40)) / max_value
-        self.image_matrix_numpy = numpy.lib.pad(self.image_matrix_numpy, 
-            margin, self.padwithones)
-        return self.label, self.image_matrix_numpy, \
-            self.width, self.height, False
+        if range_from <= self.label < range_to:
+            # convert to ndarray with size of 40 * 40 and add margin of 4
+            self.image_matrix_numpy = scipy.misc.imresize(
+                numpy.array(image_matrix_list), size=(40, 40)) / max_value
+            self.image_matrix_numpy = numpy.lib.pad(self.image_matrix_numpy, 
+                margin, self.padwithones)
+            return self.label, self.image_matrix_numpy, \
+                self.width, self.height, False
+        else:
+            return self.label, None, None, None, False
 
     def padwithones(self, vector, pad_width, iaxis, kwargs):
         vector[:pad_width[0]] = 1.0
@@ -126,15 +129,19 @@ class GntFiles(object):
             with open(file_name, 'rb') as f:
                 end_of_image = False
                 count_single = 0
+                count_single_useful = range_to - range_from
+                
                 while not end_of_image:
                     this_single_image = SingleGntImage(f)
 
                     # get the pixel matrix of a single image
                     label, pixel_matrix, width, height, end_of_image = \
-                        this_single_image.read_single_image()
+                        this_single_image.read_single_image(range_from, 
+                        range_to)
 
                     # load matrix ato 1d feature to array
                     if not end_of_image:
+                        count_single = count_single + 1
                         
                         # check the range of image
                         # notice the <= and < of the value
@@ -142,8 +149,8 @@ class GntFiles(object):
                             # save data to pickle array
                             pickle_array[0].append(pixel_matrix.reshape(-1))
                             pickle_array[1].append(label)
-                            count_single = count_single + 1
-                            
+                            count_single_useful = count_single_useful - 1
+
                             # check in batch count
                             if in_batch_count >= batch_size - 1:
                                 
@@ -155,6 +162,9 @@ class GntFiles(object):
                                 pickle_array = [[], []]
                             else:
                                 in_batch_count += 1
+
+                        if count_single_useful == 0:
+                            break
 
                     else:
                         break
@@ -186,15 +196,15 @@ class GntFiles(object):
 def gnt2pickle():
     # train set data
     train_gnt_files = GntFiles("data/train_set")
-    train_gnt_files.load_file("data/train_pickle", "train", 500, 0, 30)
+    train_gnt_files.load_file("data/l_train_pickle", "train", 500, 0, 30)
 
     # valid set data
     valid_gnt_files = GntFiles("data/valid_set")
-    valid_gnt_files.load_file("data/valid_pickle", "valid", 500, 0, 30)
+    valid_gnt_files.load_file("data/l_valid_pickle", "valid", 500, 0, 30)
 
     # test set data
     test_gnt_files = GntFiles("data/test_set")
-    test_gnt_files.load_file("data/test_pickle", "test", 500, 0, 30)
+    test_gnt_files.load_file("data/l_test_pickle", "test", 500, 0, 30)
 
 def test():
     # train set data

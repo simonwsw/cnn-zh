@@ -13,15 +13,15 @@ def lenet():
     
     # set up parameters
     class_count = 30
-    train_dir = "data/train_pickle"
+    train_dir = "data/l_train_pickle"
     train_prefix = "train"
-    valid_dir = "data/valid_pickle"
+    valid_dir = "data/l_valid_pickle"
     valid_prefix = "valid"
-    test_dir = "data/test_pickle"
+    test_dir = "data/l_test_pickle"
     test_prefix = "test"
-    n_train_batches = 0
-    n_valid_batches = 0
-    n_test_batches = 0
+    n_train_batches = 10
+    n_valid_batches = 3
+    n_test_batches = 3
     batch_size = 500
     learning_rate = 0.1
     image_size = 48
