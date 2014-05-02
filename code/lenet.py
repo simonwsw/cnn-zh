@@ -12,16 +12,16 @@ from conv_module import LeNetConvPoolLayer, LeNetConvPoolParam
 def lenet():
     
     # set up parameters
-    class_count = 30
+    class_count = 300
     train_dir = "data/l_train_pickle"
     train_prefix = "train"
     valid_dir = "data/l_valid_pickle"
     valid_prefix = "valid"
     test_dir = "data/l_test_pickle"
     test_prefix = "test"
-    n_train_batches = 10
-    n_valid_batches = 3
-    n_test_batches = 3
+    n_train_batches = 107
+    n_valid_batches = 35
+    n_test_batches = 35
     batch_size = 500
     learning_rate = 0.1
     image_size = 48
