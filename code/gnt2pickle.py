@@ -196,15 +196,15 @@ class GntFiles(object):
 def gnt2pickle():
     # train set data
     train_gnt_files = GntFiles("data/train_set")
-    train_gnt_files.load_file("data/l_train_pickle", "train", 500, 0, 30)
+    train_gnt_files.load_file("data/l_train_pickle_100", "train", 500, 0, 100)
 
     # valid set data
     valid_gnt_files = GntFiles("data/valid_set")
-    valid_gnt_files.load_file("data/l_valid_pickle", "valid", 500, 0, 30)
+    valid_gnt_files.load_file("data/l_valid_pickle_100", "valid", 500, 0, 100)
 
     # test set data
     test_gnt_files = GntFiles("data/test_set")
-    test_gnt_files.load_file("data/l_test_pickle", "test", 500, 0, 30)
+    test_gnt_files.load_file("data/l_test_pickle_100", "test", 500, 0, 100)
 
 def test():
     # train set data

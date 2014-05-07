@@ -12,12 +12,12 @@ from conv_module import LeNetConvPoolLayer, LeNetConvPoolParam
 def lenet():
     
     # set up parameters
-    class_count = 30
-    train_dir = "data/l_train_pickle"
+    class_count = 100
+    train_dir = "data/l_train_pickle_100"
     train_prefix = "train"
-    valid_dir = "data/l_valid_pickle"
+    valid_dir = "data/l_valid_pickle_100"
     valid_prefix = "valid"
-    test_dir = "data/l_test_pickle"
+    test_dir = "data/l_test_pickle_100"
     test_prefix = "test"
     n_train_batches = 10
     n_valid_batches = 3
