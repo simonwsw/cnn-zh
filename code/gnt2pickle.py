@@ -1,4 +1,4 @@
-import os
+import os, sys
 import glob
 import numpy, scipy.misc
 import cPickle
@@ -40,11 +40,11 @@ class SingleGntImage(object):
 
         return int(num_hex_str.encode('hex'), 16)
 
-    def read_single_image(self, range_from, range_to):
+    def read_single_image(self, range_from, range_to, image_size, 
+            image_margin, blur_type):
         
         # zero-one value
         max_value = 255.0
-        margin = 4
 
         # try to read next single image
         try:
@@ -71,10 +71,22 @@ class SingleGntImage(object):
 
         if range_from <= self.label < range_to:
             # convert to ndarray with size of 40 * 40 and add margin of 4
+            # (in default)
             self.image_matrix_numpy = scipy.misc.imresize(
-                numpy.array(image_matrix_list), size=(40, 40)) / max_value
+                numpy.array(image_matrix_list), 
+                size=(image_size - 2 * image_margin, 
+                    image_size - 2 * image_margin)) / max_value
             self.image_matrix_numpy = numpy.lib.pad(self.image_matrix_numpy, 
-                margin, self.padwithones)
+                image_margin, self.padwithones)
+            
+            # blur
+            if blur_type == "gaussian":
+                pass
+            elif blur_type == "bi-value":
+                pass
+            elif blur_type == "bi-plus-gaussian":
+                pass
+
             return self.label, self.image_matrix_numpy, \
                 self.width, self.height, False
         else:
@@ -112,7 +124,8 @@ class GntFiles(object):
         return self.utf8int_max
 
     def load_file(self, write_dir, write_prefix, batch_size, 
-            range_from=0, range_to=numpy.inf):
+            range_from=0, range_to=numpy.inf, image_size=48, 
+            image_margin=4, blur_type="none"):
         global utf8int_max
         file_list = self.find_file()
 
@@ -137,7 +150,7 @@ class GntFiles(object):
                     # get the pixel matrix of a single image
                     label, pixel_matrix, width, height, end_of_image = \
                         this_single_image.read_single_image(range_from, 
-                        range_to)
+                        range_to, image_size, image_margin, blur_type)
 
                     # load matrix ato 1d feature to array
                     if not end_of_image:
@@ -194,22 +207,41 @@ class GntFiles(object):
         im.save(name)
 
 def gnt2pickle():
+    
+    # system arguments
+    try:
+        save_postfix = sys.argv[1]
+        range_to = sys.argv[2]
+        image_size = sys.argv[3]
+        image_margin = sys.argv[4]
+        blur_type = sys.argv[5]
+    except IndexError:
+        print "Usage: gnt2pickle.py postfix range size margin blur"
+        sys.exit(1)
+
     # train set data
     train_gnt_files = GntFiles("data/train_set")
-    train_gnt_files.load_file("data/l_train_pickle_100", "train", 500, 0, 100)
+    train_gnt_files.load_file("data/train_pickle" + save_postfix, "train", 
+        500, 0, range_to, image_size, image_margin, blur_type)
 
     # valid set data
     valid_gnt_files = GntFiles("data/valid_set")
-    valid_gnt_files.load_file("data/l_valid_pickle_100", "valid", 500, 0, 100)
+    valid_gnt_files.load_file("data/valid_pickle" + save_postfix, "valid", 
+        500, 0, range_to, image_size, image_margin, blur_type)
 
     # test set data
     test_gnt_files = GntFiles("data/test_set")
-    test_gnt_files.load_file("data/l_test_pickle_100", "test", 500, 0, 100)
+    test_gnt_files.load_file("data/test_pickle" + save_postfix, "test", 
+        500, 0, range_to, image_size, image_margin, blur_type)
 
 def test():
     # train set data
-    train_gnt_files = GntFiles("data/train_set")
-    train_gnt_files.load_file("data/train_pickle", "train", 500)
+    # train_gnt_files = GntFiles("data/train_set")
+    # train_gnt_files.load_file("data/train_pickle", "train", 500)
+
+    print sys.argv
+    print sys.argv[1]
+    print sys.argv[2]
 
 if __name__ == '__main__':
     gnt2pickle()
