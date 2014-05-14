@@ -6,10 +6,9 @@ import theano
 import theano.tensor as T
 
 from pickle_file import PickleFile
-from conv_module import LogisticRegression, HiddenLayer
-from conv_module import LeNetConvPoolLayer, LeNetConvPoolParam
+from conv_module import LogisticRegression
 
-def lenet():
+def logostic():
     
     try:
         read_postfix = sys.argv[1]
@@ -19,7 +18,7 @@ def lenet():
         n_valid_batches = sys.argv[5]
         n_test_batches = sys.argv[6]
     except IndexError:
-        print "Usage: lenet.py postfix class image train# valid# test#"
+        print "Usage: logostic.py postfix class image train# valid# test#"
         sys.exit(1)
 
     # set up parameters
@@ -50,22 +49,6 @@ def lenet():
     # ========== build the model ==========
     # start to build the model. prepare the parameters
     print "Building the model..."
-    layer0_param = LeNetConvPoolParam(input_image_size=48, 
-        input_feature_num=1, filter_size=3, pooling_size=2, kernel=100)
-    layer1_param = LeNetConvPoolParam(
-        input_image_size=layer0_param.output_size, 
-        input_feature_num=layer0_param.kernel, 
-        filter_size=2, pooling_size=2, kernel=200)
-    layer2_param = LeNetConvPoolParam(
-        input_image_size=layer1_param.output_size, 
-        input_feature_num=layer1_param.kernel, 
-        filter_size=2, pooling_size=2, kernel=300)
-    layer3_param = LeNetConvPoolParam(
-        input_image_size=layer2_param.output_size, 
-        input_feature_num=layer2_param.kernel, 
-        filter_size=2, pooling_size=2, kernel=400)
-    layer4_output_size = 500
-    layer5_output_size = class_count
 
     # allocate symbolic variables for the data: 
     # mini batch index, rasterized images, labels
@@ -73,97 +56,37 @@ def lenet():
     x = T.matrix('x')
     y = T.ivector('y')
 
-    # seshape matrix of rasterized images of shape 
-    # (batch_size, image_size ** 2)
-    # to a 4d tensor, compatible with LeNetConvPoolLayer
-    layer0_input = x.reshape((batch_size, layer0_param.input_feature_num, 
-        layer0_param.input_image_size, layer0_param.input_image_size))
+    # construct the logistic regression class
+    # Each MNIST image has size 28*28
+    classifier = LogisticRegression(input=x, n_in=image_size * image_size, 
+        n_out=class_count)
 
-    # construct the first convolutional pooling layer:
-    # filtering reduces the image size to: 
-    # ((image_size - conv_size + 1) ** 2)
-    # maxpooling reduces this further to: ((conv_output / max) ** 2)
-    # 4d output tensor is thus of shape: (batch_size, kernel, output ** 2)
-    layer0 = LeNetConvPoolLayer(rng, input=layer0_input,
-        image_shape=(batch_size, layer0_param.input_feature_num, 
-            layer0_param.input_image_size, layer0_param.input_image_size),
-        filter_shape=(layer0_param.kernel, 
-            layer0_param.input_feature_num, layer0_param.filter_size, 
-            layer0_param.filter_size), 
-        poolsize=(layer0_param.pooling_size, 
-            layer0_param.pooling_size))
+    # the cost we minimize during training is the negative log likelihood of
+    # the model in symbolic format
+    cost = classifier.negative_log_likelihood(y)
 
-    # construct the second convolutional pooling layer
-    # 4d output tensor is thus of shape: (batch_size, kernel, output ** 2)
-    layer1 = LeNetConvPoolLayer(rng, input=layer0.output,
-        image_shape=(batch_size, layer1_param.input_feature_num, 
-            layer1_param.input_image_size, layer1_param.input_image_size),
-        filter_shape=(layer1_param.kernel, 
-            layer1_param.input_feature_num, layer1_param.filter_size, 
-            layer1_param.filter_size), 
-        poolsize=(layer1_param.pooling_size, 
-            layer1_param.pooling_size))
-
-    layer2 = LeNetConvPoolLayer(rng, input=layer1.output,
-        image_shape=(batch_size, layer2_param.input_feature_num, 
-            layer2_param.input_image_size, layer2_param.input_image_size),
-        filter_shape=(layer2_param.kernel, 
-            layer2_param.input_feature_num, layer2_param.filter_size, 
-            layer2_param.filter_size), 
-        poolsize=(layer2_param.pooling_size, 
-            layer2_param.pooling_size))
-
-    layer3 = LeNetConvPoolLayer(rng, input=layer2.output,
-        image_shape=(batch_size, layer3_param.input_feature_num, 
-            layer3_param.input_image_size, layer3_param.input_image_size),
-        filter_shape=(layer3_param.kernel, 
-            layer3_param.input_feature_num, layer3_param.filter_size, 
-            layer3_param.filter_size), 
-        poolsize=(layer3_param.pooling_size, 
-            layer3_param.pooling_size))
-
-    # the hiddenLayer being fully-connected, 
-    # it operates on 2d matrices of shape: (batch_size, num_pixels)
-    # this will generate a matrix of shape: 
-    # (batch_size, kernel[1] * output ** 2)
-    layer4_input = layer3.output.flatten(2)
-
-    # construct a fully-connected sigmoidal layer
-    layer4 = HiddenLayer(rng, input=layer4_input, 
-        n_in=(layer3_param.kernel * layer3_param.output_size * 
-            layer3_param.output_size), n_out=layer4_output_size, 
-        activation=T.tanh)
-
-    # classify the values of the fully-connected sigmoidal layer
-    layer5 = LogisticRegression(input=layer4.output, 
-        n_in=layer4_output_size, n_out=layer5_output_size)
-
-    # the cost we minimize during training is the NLL of the model
-    cost = layer5.negative_log_likelihood(y)
-
-    # create a list of all model parameters to be fit by gradient descent
-    params = (layer5.params + layer4.params + layer3.params + layer2.params + 
-        layer1.params + layer0.params)
-
-    # create a list of gradients for all model parameters
-    grads = T.grad(cost, params)
-
-    # train model updates set up with list
-    updates = []
-    for param_i, grad_i in zip(params, grads):
-        updates.append((param_i, param_i - learning_rate * grad_i))
-    
-    # create a function to compute the mistakes that are made by the model
-    test_model = theano.function([], layer5.errors(y), 
+    # compiling a Theano function that computes the mistakes that are made by
+    # the model on a minibatch
+    test_model = theano.function(inputs=[], outputs=classifier.errors(y), 
         givens={x: test_set_x, y: test_set_y})
 
-    validate_model = theano.function([], layer5.errors(y),
+    validate_model = theano.function(inputs=[], outputs=classifier.errors(y), 
         givens={x: valid_set_x, y: valid_set_y})
 
-    # train_model is a function that updates the model parameters by sgd
-    train_model = theano.function([], cost, updates=updates,
-        givens={x: train_set_x, y: train_set_y})
+    # compute the gradient of cost with respect to theta = (W,b)
+    g_W = T.grad(cost=cost, wrt=classifier.W)
+    g_b = T.grad(cost=cost, wrt=classifier.b)
 
+    # specify how to update the parameters of the model as a list of
+    # (variable, update expression) pairs.
+    updates = [(classifier.W, classifier.W - learning_rate * g_W),
+               (classifier.b, classifier.b - learning_rate * g_b)]
+
+    # compiling a Theano function `train_model` that returns the cost, but in
+    # the same time updates the parameter of the model based on the rules
+    # defined in `updates`
+    train_model = theano.function(inputs=[], outputs=cost, updates=updates, 
+            givens={x: train_set_x, y: train_set_y})
 
     # ========== train model ==========
     # prepare the parameters
@@ -277,4 +200,4 @@ def lenet():
         " ran for %.2fm" % ((end_time - start_time) / 60.0))
 
 if __name__ == '__main__':
-    lenet()
+    logistic()
