@@ -219,6 +219,9 @@ def gnt2pickle():
         print "Usage: gnt2pickle.py postfix range size margin blur"
         sys.exit(1)
 
+    if range_to == "all":
+        range_to = numpy.inf
+
     # train set data
     train_gnt_files = GntFiles("data/train_set")
     train_gnt_files.load_file("data/train_pickle" + save_postfix, "train", 

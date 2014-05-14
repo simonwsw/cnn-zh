@@ -1,5 +1,5 @@
 import time, datetime
-import os
+import os, sys
 
 import numpy
 import theano
@@ -11,20 +11,27 @@ from conv_module import LeNetConvPoolLayer, LeNetConvPoolParam
 
 def lenet():
     
+    try:
+        read_postfix = sys.argv[1]
+        class_count = sys.argv[2]
+        image_size = sys.argv[3]
+        n_train_batches = sys.argv[4]
+        n_valid_batches = sys.argv[5]
+        n_test_batches = sys.argv[6]
+    except IndexError:
+        print "Usage: lenet.py postfix class image train# valid# test#"
+        sys.exit(1)
+
     # set up parameters
-    class_count = 100
-    train_dir = "data/l_train_pickle_100"
+    train_dir = "data/train_pickle" + read_postfix
     train_prefix = "train"
-    valid_dir = "data/l_valid_pickle_100"
+    valid_dir = "data/valid_pickle" + read_postfix
     valid_prefix = "valid"
-    test_dir = "data/l_test_pickle_100"
+    test_dir = "data/test_pickle" + read_postfix
     test_prefix = "test"
-    n_train_batches = 35
-    n_valid_batches = 11
-    n_test_batches = 11
+    
     batch_size = 500
     learning_rate = 0.1
-    image_size = 48
 
     # set up log file
     log_dir = "tmp"
