@@ -6,9 +6,9 @@ import theano
 import theano.tensor as T
 
 from pickle_file import PickleFile
-from conv_module import LogisticRegression
+from conv_module import LogisticRegression, HiddenLayer
 
-def logistic():
+def mlp():
     
     try:
         read_postfix = sys.argv[1]
@@ -18,7 +18,7 @@ def logistic():
         n_valid_batches = sys.argv[5]
         n_test_batches = sys.argv[6]
     except IndexError:
-        print "Usage: logostic.py postfix class image train# valid# test#"
+        print "Usage: mlp.py postfix class image train# valid# test#"
         sys.exit(1)
 
     # set up parameters
@@ -31,6 +31,9 @@ def logistic():
     
     batch_size = 500
     learning_rate = 0.1
+    n_hidden = 500
+    l1_reg=0.00
+    l2_reg=0.0001
 
     # set up log file
     log_dir = "tmp"
@@ -56,39 +59,74 @@ def logistic():
     x = T.matrix('x')
     y = T.ivector('y')
 
-    # construct the logistic regression class
-    # Each MNIST image has size 28*28
-    classifier = LogisticRegression(input=x, n_in=image_size * image_size, 
-        n_out=class_count)
+    # hidden layer
+    hidden_layer = HiddenLayer(rng=rng, input=x, 
+        n_in=image_size * image_size, n_out=n_hidden, activation=T.tanh)
+
+    # The logistic regression layer gets as input the hidden units
+    # of the hidden layer
+    log_regression_layer = LogisticRegression(input=hidden_layer.output, 
+        n_in=n_hidden, n_out=class_count)
+
+    # L1 norm ; one regularization option is to enforce L1 norm to
+    # be small
+    l1_norm = abs(hidden_layer.W).sum() + abs(log_regression_layer.W).sum()
+
+    # square of L2 norm ; one regularization option is to enforce
+    # square of L2 norm to be small
+    l2_sqr = (hidden_layer.W ** 2).sum() + (log_regression_layer.W ** 2).sum()
+
+    # negative log likelihood of the MLP is given by the negative
+    # log likelihood of the output of the model, computed in the
+    # logistic regression layer
+    negative_log_likelihood = log_regression_layer.negative_log_likelihood
+    
+    # same holds for the function computing the number of errors
+    errors = log_regression_layer.errors
+
+    # the parameters of the model are the parameters of the two layer it is
+    # made out of
+    params = hidden_layer.params + log_regression_layer.params
 
     # the cost we minimize during training is the negative log likelihood of
-    # the model in symbolic format
-    cost = classifier.negative_log_likelihood(y)
+    # the model plus the regularization terms (L1 and L2); cost is expressed
+    # here symbolically
+    cost = negative_log_likelihood(y)
+    cost = cost + l1_reg * classifier.l1_norm + l2_reg * classifier.l2_sqr
 
-    # compiling a Theano function that computes the mistakes that are made by
-    # the model on a minibatch
-    test_model = theano.function(inputs=[], outputs=classifier.errors(y), 
+    # compiling a Theano function that computes the mistakes that are made
+    # by the model on a minibatch
+    test_model = theano.function(inputs=[], outputs=errors(y),
         givens={x: test_set_x, y: test_set_y})
 
-    validate_model = theano.function(inputs=[], outputs=classifier.errors(y), 
+    validate_model = theano.function(inputs=[], outputs=errors(y),
         givens={x: valid_set_x, y: valid_set_y})
 
-    # compute the gradient of cost with respect to theta = (W,b)
-    g_W = T.grad(cost=cost, wrt=classifier.W)
-    g_b = T.grad(cost=cost, wrt=classifier.b)
+    # compute the gradient of cost with respect to theta (sotred in params)
+    # the resulting gradients will be stored in a list gparams
+    gparams = []
+    for param in classifier.params:
+        gparam = T.grad(cost, param)
+        gparams.append(gparam)
 
     # specify how to update the parameters of the model as a list of
-    # (variable, update expression) pairs.
-    updates = [(classifier.W, classifier.W - learning_rate * g_W),
-               (classifier.b, classifier.b - learning_rate * g_b)]
+    # (variable, update expression) pairs
+    updates = []
+    
+    # given two list the zip A = [a1, a2, a3, a4] and B = [b1, b2, b3, b4] of
+    # same length, zip generates a list C of same size, where each element
+    # is a pair formed from the two lists :
+    #    C = [(a1, b1), (a2, b2), (a3, b3), (a4, b4)]
+    for param, gparam in zip(classifier.params, gparams):
+        updates.append((param, param - learning_rate * gparam))
 
-    # compiling a Theano function `train_model` that returns the cost, but in
-    # the same time updates the parameter of the model based on the rules
+    # compiling a Theano function `train_model` that returns the cost, but
+    # in the same time updates the parameter of the model based on the rules
     # defined in `updates`
-    train_model = theano.function(inputs=[], outputs=cost, updates=updates, 
-            givens={x: train_set_x, y: train_set_y})
+    train_model = theano.function(inputs=[], outputs=cost,
+        updates=updates, givens={x: train_set_x, y: train_set_y})
 
-
+    
     # ========== train model ==========
     # prepare the parameters
     print "Training the model..."
@@ -201,4 +239,4 @@ def logistic():
         " ran for %.2fm" % ((end_time - start_time) / 60.0))
 
 if __name__ == '__main__':
-    logistic()
+    mlp()
