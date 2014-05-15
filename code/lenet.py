@@ -13,11 +13,11 @@ def lenet():
     
     try:
         read_postfix = sys.argv[1]
-        class_count = sys.argv[2]
-        image_size = sys.argv[3]
-        n_train_batches = sys.argv[4]
-        n_valid_batches = sys.argv[5]
-        n_test_batches = sys.argv[6]
+        class_count = int(sys.argv[2])
+        image_size = int(sys.argv[3])
+        n_train_batches = int(sys.argv[4])
+        n_valid_batches = int(sys.argv[5])
+        n_test_batches = int(sys.argv[6])
     except IndexError:
         print "Usage: lenet.py postfix class image train# valid# test#"
         sys.exit(1)

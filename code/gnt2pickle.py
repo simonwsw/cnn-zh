@@ -211,9 +211,9 @@ def gnt2pickle():
     # system arguments
     try:
         save_postfix = sys.argv[1]
-        range_to = sys.argv[2]
-        image_size = sys.argv[3]
-        image_margin = sys.argv[4]
+        range_to = int(sys.argv[2])
+        image_size = int(sys.argv[3])
+        image_margin = int(sys.argv[4])
         blur_type = sys.argv[5]
     except IndexError:
         print "Usage: gnt2pickle.py postfix range size margin blur"
