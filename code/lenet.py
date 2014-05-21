@@ -50,7 +50,7 @@ def lenet():
     # ========== build the model ==========
     # start to build the model. prepare the parameters
     print "Building the model..."
-    layer0_param = LeNetConvPoolParam(input_image_size=48, 
+    layer0_param = LeNetConvPoolParam(input_image_size=image_size, 
         input_feature_num=1, filter_size=3, pooling_size=2, kernel=100)
     layer1_param = LeNetConvPoolParam(
         input_image_size=layer0_param.output_size, 
