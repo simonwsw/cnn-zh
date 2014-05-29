@@ -92,7 +92,7 @@ def mlp():
     # the model plus the regularization terms (L1 and L2); cost is expressed
     # here symbolically
     cost = negative_log_likelihood(y)
-    cost = cost + l1_reg * classifier.l1_norm + l2_reg * classifier.l2_sqr
+    cost = cost + l1_reg * l1_norm + l2_reg * l2_sqr
 
     # compiling a Theano function that computes the mistakes that are made
     # by the model on a minibatch
@@ -105,7 +105,7 @@ def mlp():
     # compute the gradient of cost with respect to theta (sotred in params)
     # the resulting gradients will be stored in a list gparams
     gparams = []
-    for param in classifier.params:
+    for param in params:
         gparam = T.grad(cost, param)
         gparams.append(gparam)
 
@@ -117,7 +117,7 @@ def mlp():
     # same length, zip generates a list C of same size, where each element
     # is a pair formed from the two lists :
     #    C = [(a1, b1), (a2, b2), (a3, b3), (a4, b4)]
-    for param, gparam in zip(classifier.params, gparams):
+    for param, gparam in zip(params, gparams):
         updates.append((param, param - learning_rate * gparam))
 
     # compiling a Theano function `train_model` that returns the cost, but
