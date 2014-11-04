@@ -1,7 +1,7 @@
 cnn-zh
 ======
 
-[Convolutional Neural Network] [1] (CNN) for Offline Handwriting Chinese 
+[Convolutional Neural Network] [1] for Offline Handwriting Chinese 
 Character Recognition. 
 
 * 	Library required: [Theano](http://deeplearning.net/software/theano/) 
