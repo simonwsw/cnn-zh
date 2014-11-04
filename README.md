@@ -1,7 +1,7 @@
 cnn-zh
 ======
 
-[Convolutional Neural Network] [1] for Offline Handwriting Chinese 
+Convolutional Neural Network [1] for Offline Handwriting Chinese 
 Character Recognition. 
 
 * 	Library required: [Theano](http://deeplearning.net/software/theano/) 
@@ -13,5 +13,5 @@ Character Recognition.
 	*	*Offline Character Data* for testing data
 *	GPU acceleration is not implemented. 
 
-[1]: http://arxiv.org/pdf/1309.0261.pdf "Multi-Column Deep Neural Networks 
-for Offline Handwritten Chinese Character Classification"
+[1]: [Multi-Column Deep Neural Networks for Offline Handwritten 
+Chinese Character Classification] (http://arxiv.org/pdf/1309.0261.pdf)
